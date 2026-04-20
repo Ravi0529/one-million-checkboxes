@@ -6,7 +6,7 @@ import { registerSockets } from "./sockets";
 async function main() {
   const server = createServer(app);
 
-  const io = initSocket(server);
+  const io = await initSocket(server);
   registerSockets(io);
 
   const PORT: number = +(process.env.PORT ?? 3000);
