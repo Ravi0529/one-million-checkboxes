@@ -1,0 +1,21 @@
+services:
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: checkbox_backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - ../.env
+    depends_on:
+      - redis
+    volumes:
+      - ..:/app
+    command: npm run dev
+
+  redis:
+    image: redis:7-alpine
+    container_name: checkbox_redis
+    ports:
+      - "6379:6379"
