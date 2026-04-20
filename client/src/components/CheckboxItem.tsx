@@ -1,13 +1,19 @@
 import React from "react";
 import { socket } from "../services/socket";
+import {
+  useCheckboxValue,
+  type CheckboxStore,
+} from "../hooks/useCheckboxValue";
 
 interface CheckboxItemProps {
   id: number;
-  value: number;
+  store: CheckboxStore;
   style: React.CSSProperties;
 }
 
-function CheckboxItem({ id, value, style }: CheckboxItemProps) {
+function CheckboxItem({ id, store, style }: CheckboxItemProps) {
+  const value = useCheckboxValue(id, store);
+
   const handleChange = () => {
     socket.emit("toggle_checkbox", {
       id,

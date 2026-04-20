@@ -1,26 +1,43 @@
-import { useRef, useState } from "react";
+import { useRef } from "react";
+
+type Listener = () => void;
 
 export const useCheckboxStore = () => {
-  const store = useRef<Map<number, number>>(new Map());
+  const data = useRef<Map<number, number>>(new Map());
+  const listeners = useRef<Map<number, Set<Listener>>>(new Map());
 
-  const [, forceRender] = useState(0);
+  const subscribe = (id: number, listener: Listener) => {
+    if (!listeners.current.has(id)) {
+      listeners.current.set(id, new Set());
+    }
 
-  const setRange = (start: number, data: number[]) => {
-    data.forEach((value, index) => {
-      store.current.set(start + index, value);
+    listeners.current.get(id)!.add(listener);
+
+    return () => {
+      listeners.current.get(id)?.delete(listener);
+    };
+  };
+
+  const notify = (id: number) => {
+    listeners.current.get(id)?.forEach((l) => l());
+  };
+
+  const setRange = (start: number, values: number[]) => {
+    values.forEach((value, index) => {
+      const id = start + index;
+      data.current.set(id, value);
+      notify(id);
     });
-
-    forceRender((x) => x + 1);
   };
 
   const updateOne = (id: number, value: number) => {
-    store.current.set(id, value);
-    forceRender((x) => x + 1);
+    data.current.set(id, value);
+    notify(id);
   };
 
   const get = (id: number) => {
-    return store.current.get(id) ?? 0;
+    return data.current.get(id) ?? 0;
   };
 
-  return { setRange, updateOne, get };
+  return { subscribe, setRange, updateOne, get };
 };

@@ -51,7 +51,7 @@ export default function CheckboxGrid() {
   const Cell = ({ columnIndex, rowIndex, style }: CellComponentProps) => {
     const id = rowIndex * COLUMN_COUNT + columnIndex;
 
-    return <CheckboxItem id={id} style={style} value={store.get(id)} />;
+    return <CheckboxItem id={id} style={style} store={store} />;
   };
 
   return (

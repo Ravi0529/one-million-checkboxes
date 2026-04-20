@@ -6,12 +6,12 @@ export const useSocket = (
 ) => {
   useEffect(() => {
     Object.entries(handlers).forEach(([event, handler]) => {
-      socket.on(event, handler as (...args: any[]) => void);
+      socket.on(event, handler);
     });
 
     return () => {
       Object.entries(handlers).forEach(([event, handler]) => {
-        socket.off(event, handler as (...args: any[]) => void);
+        socket.off(event, handler);
       });
     };
   }, [handlers]);
