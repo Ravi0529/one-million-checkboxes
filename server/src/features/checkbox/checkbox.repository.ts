@@ -44,10 +44,24 @@ export const checkboxRepository = {
   },
 
   async getRange(start: number, end: number): Promise<number[]> {
+    const byteStart = Math.floor(start / 8);
+    const byteEnd = Math.floor((end - 1) / 8);
+
+    const buffer = await redis.getrange(
+      CHECKBOX_BITMAP_KEY,
+      byteStart,
+      byteEnd,
+    );
+
     const result: number[] = [];
 
     for (let i = start; i < end; i++) {
-      const bit = await redis.getbit(CHECKBOX_BITMAP_KEY, i);
+      const byteIndex = Math.floor(i / 8) - byteStart;
+      const bitIndex = 7 - (i % 8);
+
+      const byte = buffer.charCodeAt(byteIndex) || 0;
+      const bit = (byte >> bitIndex) & 1;
+
       result.push(bit);
     }
 
