@@ -6,6 +6,8 @@ import { validateRange } from "./checkbox.validator";
 export const registerCheckboxHandlers = (io: Server, socket: Socket) => {
   const userId = socket.id;
 
+  const activeRanges = new Set<string>();
+
   socket.on("toggle_checkbox", async (data) => {
     try {
       const allowed = await rateLimiter.isAllowed(userId);
@@ -21,7 +23,13 @@ export const registerCheckboxHandlers = (io: Server, socket: Socket) => {
 
       if (!result) return;
 
-      io.emit("checkbox_updated", result);
+      const chunkSize = 1000;
+      const chunkStart = Math.floor(result.id / chunkSize) * chunkSize;
+      const chunkEnd = chunkStart + chunkSize;
+
+      const room = `range:${chunkStart}-${chunkEnd}`;
+
+      io.to(room).emit("checkbox_updated", result);
     } catch (error) {
       console.error("Toggle error: ", error);
     }
@@ -56,5 +64,23 @@ export const registerCheckboxHandlers = (io: Server, socket: Socket) => {
         message: "Failed to fetch range",
       });
     }
+  });
+
+  socket.on("subscribe_range", ({ start, end }) => {
+    const room = `range:${start}-${end}`;
+
+    if (activeRanges.has(room)) return;
+
+    activeRanges.add(room);
+    socket.join(room);
+  });
+
+  socket.on("unsubscribe_range", ({ start, end }) => {
+    const room = `range:${start}-${end}`;
+
+    if (!activeRanges.has(room)) return;
+
+    activeRanges.delete(room);
+    socket.leave(room);
   });
 };
