@@ -1,5 +1,6 @@
 import { redis } from "../../config/redis";
 import { CHECKBOX_BITMAP_KEY, getOwnerKey } from "./checkbox.constants";
+import { TOGGLE_CHECKBOX_LUA } from "./checkbox.lua";
 
 export const checkboxRepository = {
   async getOwner(id: number) {
@@ -20,5 +21,25 @@ export const checkboxRepository = {
 
   async getChecked(id: number) {
     return redis.getbit(CHECKBOX_BITMAP_KEY, id);
+  },
+
+  async toggleAtomic(
+    id: number,
+    checked: boolean,
+    userId: string,
+  ): Promise<boolean> {
+    const ownerKey = getOwnerKey(id);
+
+    const result = await redis.eval(
+      TOGGLE_CHECKBOX_LUA,
+      2,
+      CHECKBOX_BITMAP_KEY,
+      ownerKey,
+      id,
+      userId,
+      checked ? 1 : 0,
+    );
+
+    return result === 1;
   },
 };

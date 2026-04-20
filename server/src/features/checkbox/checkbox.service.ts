@@ -28,6 +28,14 @@ export const checkboxService = {
       return { id, checked: false, userId };
     }
 
-    return null;
+    const success = await checkboxRepository.toggleAtomic(id, checked, userId);
+
+    if (!success) return null;
+
+    return {
+      id,
+      checked,
+      userId,
+    };
   },
 };
