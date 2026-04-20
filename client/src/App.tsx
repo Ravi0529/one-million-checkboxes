@@ -1,9 +1,11 @@
 import "./App.css";
+import CheckboxGrid from "./components/CheckboxGrid";
 
 const App = () => {
   return (
-    <div>
-      <h1>Frontend Setup</h1>
+    <div style={{ padding: 20 }}>
+      <h1>One Million Checkboxes</h1>
+      <CheckboxGrid />
     </div>
   );
 };

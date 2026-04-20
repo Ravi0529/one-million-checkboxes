@@ -14,11 +14,6 @@ interface RangeDataPayload {
   data: number[];
 }
 
-interface CheckboxUpdatedPayload {
-  id: number;
-  checked: boolean;
-}
-
 export default function CheckboxGrid() {
   const store = useCheckboxStore();
 
@@ -28,8 +23,13 @@ export default function CheckboxGrid() {
       store.setRange(payload.start, payload.data);
     },
     checkbox_updated: (...args: unknown[]) => {
-      const payload = args[0] as CheckboxUpdatedPayload;
-      store.updateOne(payload.id, payload.checked ? 1 : 0);
+      const payload = args[0] as {
+        id: number;
+        checked: boolean;
+        userId: string;
+      };
+
+      store.updateOne(payload.id, payload.checked ? 1 : 0, payload.userId);
     },
   });
 

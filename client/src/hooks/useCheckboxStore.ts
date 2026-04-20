@@ -2,8 +2,11 @@ import { useRef } from "react";
 
 type Listener = () => void;
 
+export type CheckboxStore = ReturnType<typeof useCheckboxStore>;
+
 export const useCheckboxStore = () => {
   const data = useRef<Map<number, number>>(new Map());
+  const owners = useRef<Map<number, string>>(new Map());
   const listeners = useRef<Map<number, Set<Listener>>>(new Map());
 
   const subscribe = (id: number, listener: Listener) => {
@@ -30,14 +33,20 @@ export const useCheckboxStore = () => {
     });
   };
 
-  const updateOne = (id: number, value: number) => {
+  const updateOne = (id: number, value: number, userId?: string) => {
     data.current.set(id, value);
+
+    if (userId) {
+      if (value === 1) owners.current.set(id, userId);
+      else owners.current.delete(id);
+    }
+
     notify(id);
   };
 
-  const get = (id: number) => {
-    return data.current.get(id) ?? 0;
-  };
+  const get = (id: number) => data.current.get(id) ?? 0;
 
-  return { subscribe, setRange, updateOne, get };
+  const getOwner = (id: number) => owners.current.get(id);
+
+  return { subscribe, setRange, updateOne, get, getOwner };
 };

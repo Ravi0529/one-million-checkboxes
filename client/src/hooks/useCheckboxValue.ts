@@ -1,22 +1,22 @@
 import { useEffect, useState } from "react";
+import type { CheckboxStore } from "./useCheckboxStore";
 
-export interface CheckboxStore {
-  get: (id: number) => number;
-  subscribe: (id: number, callback: () => void) => () => void;
-  setRange: (start: number, data: number[]) => void;
-  updateOne: (id: number, value: number) => void;
-}
-
-export const useCheckboxValue = (id: number, store: CheckboxStore): number => {
-  const [value, setValue] = useState<number>(() => store.get(id));
+export const useCheckboxValue = (id: number, store: CheckboxStore) => {
+  const [state, setState] = useState(() => ({
+    value: store.get(id),
+    owner: store.getOwner(id),
+  }));
 
   useEffect(() => {
     const unsubscribe = store.subscribe(id, () => {
-      setValue(store.get(id));
+      setState({
+        value: store.get(id),
+        owner: store.getOwner(id),
+      });
     });
 
     return unsubscribe;
   }, [id, store]);
 
-  return value;
+  return state;
 };
