@@ -38,4 +38,12 @@ export const checkboxService = {
       userId,
     };
   },
+
+  async getRange(start: number, end: number): Promise<number[]> {
+    if (start < 0 || end > 1_000_000 || start >= end) {
+      throw new Error("Invalid range");
+    }
+
+    return checkboxRepository.getRange(start, end);
+  },
 };

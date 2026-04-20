@@ -8,3 +8,14 @@ export interface ToggleResult {
   checked: boolean;
   userId: string;
 }
+
+export interface GetRangePayload {
+  start: number;
+  end: number;
+}
+
+export interface RangeData {
+  start: number;
+  end: number;
+  data: number[];
+}

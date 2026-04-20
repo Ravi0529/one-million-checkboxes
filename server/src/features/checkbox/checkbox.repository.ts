@@ -42,4 +42,15 @@ export const checkboxRepository = {
 
     return result === 1;
   },
+
+  async getRange(start: number, end: number): Promise<number[]> {
+    const result: number[] = [];
+
+    for (let i = start; i < end; i++) {
+      const bit = await redis.getbit(CHECKBOX_BITMAP_KEY, i);
+      result.push(bit);
+    }
+
+    return result;
+  },
 };
