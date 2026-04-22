@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useRef } from "react";
 import { socket } from "../services/socket";
 import { useCheckboxValue } from "../hooks/useCheckboxValue";
 import type { CheckboxStore } from "../hooks/useCheckboxStore";
+import { userId } from "../services/userId";
 
 interface CheckboxItemProps {
   id: number;
@@ -9,34 +10,40 @@ interface CheckboxItemProps {
   style: React.CSSProperties;
 }
 
-const currentUserId = socket.id;
-
 function CheckboxItem({ id, store, style }: CheckboxItemProps) {
   const { value, owner } = useCheckboxValue(id, store);
+
+  const userIdRef = useRef<string | null>(null);
+
+  if (!userIdRef.current && socket.id) {
+    userIdRef.current = socket.id;
+  }
+
+  const currentUserId = userIdRef.current;
 
   const handleChange = () => {
     const newValue = value === 0 ? 1 : 0;
 
-    store.updateOne(id, newValue, currentUserId);
+    store.updateOne(id, newValue, currentUserId ?? undefined);
 
     socket.emit("toggle_checkbox", {
       id,
-      checked: newValue === 1,
+      userId,
     });
   };
 
-  let background = "white";
+  let className = "checkbox-item unchecked";
 
   if (value === 1) {
     if (owner === currentUserId) {
-      background = "#b9fbc0";
+      className = "checkbox-item checked-self";
     } else {
-      background = "#a0c4ff";
+      className = "checkbox-item checked-other";
     }
   }
 
   return (
-    <div style={{ ...style, background }}>
+    <div className={className} style={style}>
       <input
         type="checkbox"
         checked={value === 1}

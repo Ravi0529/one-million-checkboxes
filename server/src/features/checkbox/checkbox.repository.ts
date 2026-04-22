@@ -3,55 +3,40 @@ import { CHECKBOX_BITMAP_KEY, getOwnerKey } from "./checkbox.constants";
 import { TOGGLE_CHECKBOX_LUA } from "./checkbox.lua";
 
 export const checkboxRepository = {
-  async getOwner(id: number) {
-    return redis.get(getOwnerKey(id));
-  },
-
-  async setOwner(id: number, userId: string) {
-    return redis.set(getOwnerKey(id), userId);
-  },
-
-  async removeOwner(id: number) {
-    return redis.del(getOwnerKey(id));
-  },
-
-  async setChecked(id: number, value: boolean) {
-    return redis.setbit(CHECKBOX_BITMAP_KEY, id, value ? 1 : 0);
-  },
-
   async getChecked(id: number) {
     return redis.getbit(CHECKBOX_BITMAP_KEY, id);
   },
 
   async toggleAtomic(
     id: number,
-    checked: boolean,
     userId: string,
-  ): Promise<boolean> {
+  ): Promise<{ status: number; owner: string | null }> {
     const ownerKey = getOwnerKey(id);
 
-    const result = await redis.eval(
+    const result = (await redis.eval(
       TOGGLE_CHECKBOX_LUA,
       2,
       CHECKBOX_BITMAP_KEY,
       ownerKey,
       id,
       userId,
-      checked ? 1 : 0,
-    );
+    )) as [number, string | null];
 
-    return result === 1;
+    console.log("LUA TOGGLE:", id, userId);
+
+    return {
+      status: result[0],
+      owner: result[1],
+    };
   },
 
   async getRange(start: number, end: number): Promise<number[]> {
     const byteStart = Math.floor(start / 8);
     const byteEnd = Math.floor((end - 1) / 8);
 
-    const buffer = await redis.getrange(
-      CHECKBOX_BITMAP_KEY,
-      byteStart,
-      byteEnd,
-    );
+    const raw = await redis.getrange(CHECKBOX_BITMAP_KEY, byteStart, byteEnd);
+
+    const buffer = Buffer.from(raw, "latin1");
 
     const result: number[] = [];
 
@@ -59,7 +44,7 @@ export const checkboxRepository = {
       const byteIndex = Math.floor(i / 8) - byteStart;
       const bitIndex = 7 - (i % 8);
 
-      const byte = buffer.charCodeAt(byteIndex) || 0;
+      const byte = buffer[byteIndex] ?? 0;
       const bit = (byte >> bitIndex) & 1;
 
       result.push(bit);

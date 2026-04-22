@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Grid } from "react-window";
 import type { CellComponentProps } from "react-window";
 import { socket } from "../services/socket";
@@ -8,6 +8,7 @@ import CheckboxItem from "./CheckboxItem";
 
 const COLUMN_COUNT = 50;
 const ROW_COUNT = 20000;
+const CHUNK_SIZE = 1000;
 
 interface RangeDataPayload {
   start: number;
@@ -17,6 +18,7 @@ interface RangeDataPayload {
 export default function CheckboxGrid() {
   const store = useCheckboxStore();
 
+  // 🔥 SOCKET HANDLERS
   useSocket({
     range_data: (...args: unknown[]) => {
       const payload = args[0] as RangeDataPayload;
@@ -33,10 +35,12 @@ export default function CheckboxGrid() {
     },
   });
 
+  // 🔥 REFS
   const lastRangeRef = useRef<{ start: number; end: number } | null>(null);
   const prevRangeRef = useRef<{ start: number; end: number } | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // 🔥 LOAD RANGE (with unsubscribe)
   const loadRange = (start: number, end: number) => {
     if (prevRangeRef.current) {
       socket.emit("unsubscribe_range", prevRangeRef.current);
@@ -48,45 +52,74 @@ export default function CheckboxGrid() {
     prevRangeRef.current = { start, end };
   };
 
+  // 🔥 CELL RENDER
   const Cell = ({ columnIndex, rowIndex, style }: CellComponentProps) => {
     const id = rowIndex * COLUMN_COUNT + columnIndex;
 
     return <CheckboxItem id={id} style={style} store={store} />;
   };
 
+  // 🔥 RESPONSIVE GRID SIZE
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [gridSize, setGridSize] = useState({ width: 600, height: 400 });
+
+  useEffect(() => {
+    const updateSize = () => {
+      if (containerRef.current) {
+        setGridSize({
+          width: containerRef.current.offsetWidth,
+          height: Math.min(400, window.innerHeight - 150),
+        });
+      }
+    };
+
+    updateSize();
+    window.addEventListener("resize", updateSize);
+
+    return () => window.removeEventListener("resize", updateSize);
+  }, []);
+
   return (
-    <Grid
-      cellComponent={Cell}
-      cellProps={{}}
-      columnCount={COLUMN_COUNT}
-      columnWidth={30}
-      defaultHeight={600}
-      rowCount={ROW_COUNT}
-      rowHeight={30}
-      defaultWidth={600}
-      style={{ height: 600, width: 600 }}
-      onCellsRendered={(visibleCells) => {
-        const start = visibleCells.rowStartIndex * COLUMN_COUNT;
-        const end = (visibleCells.rowStopIndex + 1) * COLUMN_COUNT;
+    <div ref={containerRef} style={{ width: "100%" }}>
+      <Grid
+        cellComponent={Cell}
+        cellProps={{}}
+        columnCount={COLUMN_COUNT}
+        columnWidth={30}
+        defaultHeight={gridSize.height}
+        rowCount={ROW_COUNT}
+        rowHeight={30}
+        defaultWidth={gridSize.width}
+        style={{ width: gridSize.width, height: gridSize.height }}
+        onCellsRendered={(visibleCells) => {
+          const start = visibleCells.rowStartIndex * COLUMN_COUNT;
+          // const end = (visibleCells.rowStopIndex + 1) * COLUMN_COUNT;
 
-        if (
-          lastRangeRef.current &&
-          lastRangeRef.current.start === start &&
-          lastRangeRef.current.end === end
-        ) {
-          return;
-        }
+          const alignedStart = Math.floor(start / CHUNK_SIZE) * CHUNK_SIZE;
+          const alignedEnd = alignedStart + CHUNK_SIZE;
 
-        lastRangeRef.current = { start, end };
+          if (
+            lastRangeRef.current &&
+            lastRangeRef.current.start === alignedStart &&
+            lastRangeRef.current.end === alignedEnd
+          ) {
+            return;
+          }
 
-        if (debounceRef.current) {
-          clearTimeout(debounceRef.current);
-        }
+          lastRangeRef.current = {
+            start: alignedStart,
+            end: alignedEnd,
+          };
 
-        debounceRef.current = setTimeout(() => {
-          loadRange(start, end);
-        }, 100);
-      }}
-    />
+          if (debounceRef.current) {
+            clearTimeout(debounceRef.current);
+          }
+
+          debounceRef.current = setTimeout(() => {
+            loadRange(alignedStart, alignedEnd);
+          }, 100);
+        }}
+      />
+    </div>
   );
 }

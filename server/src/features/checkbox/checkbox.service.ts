@@ -6,36 +6,18 @@ export const checkboxService = {
     payload: ToggleCheckboxPayload,
     userId: string,
   ): Promise<ToggleResult | null> {
-    const { id, checked } = payload;
+    const { id } = payload;
 
-    const owner = await checkboxRepository.getOwner(id);
+    const result = await checkboxRepository.toggleAtomic(id, userId);
 
-    if (checked) {
-      if (!owner) {
-        await checkboxRepository.setOwner(id, userId);
-        await checkboxRepository.setChecked(id, true);
-
-        return { id, checked: true, userId };
-      }
-
+    if (result.status === -1) {
       return null;
     }
 
-    if (owner === userId) {
-      await checkboxRepository.removeOwner(id);
-      await checkboxRepository.setChecked(id, false);
-
-      return { id, checked: false, userId };
-    }
-
-    const success = await checkboxRepository.toggleAtomic(id, checked, userId);
-
-    if (!success) return null;
-
     return {
       id,
-      checked,
-      userId,
+      checked: result.status === 1,
+      userId: result.owner!,
     };
   },
 

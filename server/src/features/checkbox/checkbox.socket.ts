@@ -21,7 +21,12 @@ export const registerCheckboxHandlers = (io: Server, socket: Socket) => {
 
       const result = await checkboxService.toggle(data, userId);
 
-      if (!result) return;
+      if (!result) {
+        socket.emit("action_rejected", {
+          message: "Not your checkbox",
+        });
+        return;
+      }
 
       const chunkSize = 1000;
       const chunkStart = Math.floor(result.id / chunkSize) * chunkSize;
@@ -29,7 +34,7 @@ export const registerCheckboxHandlers = (io: Server, socket: Socket) => {
 
       const room = `range:${chunkStart}-${chunkEnd}`;
 
-      io.to(room).emit("checkbox_updated", result);
+      io.emit("checkbox_updated", result);
     } catch (error) {
       console.error("Toggle error: ", error);
     }
@@ -73,6 +78,8 @@ export const registerCheckboxHandlers = (io: Server, socket: Socket) => {
 
     activeRanges.add(room);
     socket.join(room);
+
+    console.log("JOIN:", socket.id, room);
   });
 
   socket.on("unsubscribe_range", ({ start, end }) => {
