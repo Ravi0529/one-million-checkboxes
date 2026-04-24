@@ -56,6 +56,92 @@ body {
   letter-spacing: 0.02em;
 }
 
+.app-toolbar {
+  width: auto;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0 auto;
+}
+
+.stats-panel {
+  flex: 0 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.stat-card {
+  min-width: 120px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.04),
+    rgba(255, 255, 255, 0.02)
+  );
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.stat-label {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.stat-value {
+  display: block;
+  font-size: clamp(1rem, 1vw + 0.7rem, 1.35rem);
+  line-height: 1;
+}
+
+.github-link {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 48px;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: linear-gradient(
+    180deg,
+    rgba(245, 158, 11, 0.18),
+    rgba(245, 158, 11, 0.08)
+  );
+  color: var(--text);
+  text-decoration: none;
+  box-shadow: var(--shadow);
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.github-link:hover {
+  transform: translateY(-1px);
+  border-color: rgba(245, 158, 11, 0.45);
+}
+
+.github-link svg {
+  width: 18px;
+  height: 18px;
+}
+
+.github-link span {
+  font-size: 0.9rem;
+}
+
 .grid-container {
   width: 100%;
   display: flex;
@@ -135,6 +221,15 @@ body {
 
   .app {
     gap: 16px;
+  }
+
+  .stats-panel {
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .github-link {
+    min-height: 48px;
   }
 
   .checkbox-grid-frame {
