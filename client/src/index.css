@@ -1,68 +1,107 @@
-/* Simple Dark Theme */
 :root {
-  --bg: #121212;
-  --bg-secondary: #1e1e1e;
-  --text: #e0e0e0;
-  --text-muted: #a0a0a0;
-  --border: #333333;
-  --checkbox-unchecked: #2a2a2a;
+  --bg: #0e1116;
+  --bg-secondary: #151b23;
+  --surface: #1b2430;
+  --text: #edf2f7;
+  --text-muted: #94a3b8;
+  --border: #2d3748;
+  --border-strong: #3f4b5d;
+  --checkbox-unchecked: #253141;
   --checkbox-checked-self: #4ade80;
   --checkbox-checked-other: #60a5fa;
-  --accent: #6366f1;
+  --accent: #f59e0b;
+  --shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
 }
 
 * {
   box-sizing: border-box;
 }
 
+html {
+  font-size: 16px;
+}
+
 body {
   margin: 0;
-  padding: 0;
-  background: var(--bg);
+  background:
+    radial-gradient(circle at top, rgba(245, 158, 11, 0.12), transparent 30%),
+    linear-gradient(180deg, #10151d 0%, var(--bg) 100%);
   color: var(--text);
-  font-family:
-    system-ui,
-    -apple-system,
-    sans-serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   min-height: 100vh;
 }
 
 #root {
   width: 100%;
   max-width: 100%;
-  margin: 0;
-  padding: 16px;
   min-height: 100vh;
+  margin: 0 auto;
+  padding: 20px;
 }
 
 .app {
+  width: min(100%, 1800px);
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
 }
 
 .app h1 {
-  font-size: 28px;
-  font-weight: 600;
   margin: 0;
-  color: var(--text);
+  text-align: center;
+  font-size: clamp(1.75rem, 2vw + 1rem, 3rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .grid-container {
   width: 100%;
-  max-width: 600px;
+  display: flex;
+  justify-content: center;
+}
+
+.checkbox-grid-shell {
+  width: 100%;
+}
+
+.checkbox-grid-frame {
+  width: 100%;
+  display: flex;
+  justify-content: center;
   overflow: auto;
+  padding: 12px;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 20px;
+  background: linear-gradient(
+    180deg,
+    var(--bg-secondary) 0%,
+    var(--surface) 100%
+  );
+  box-shadow: var(--shadow);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+.checkbox-grid-frame::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.checkbox-grid-frame::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 999px;
 }
 
 .checkbox-item {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--border);
-  transition: background-color 0.15s ease;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .checkbox-item.unchecked {
@@ -77,38 +116,44 @@ body {
   background: var(--checkbox-checked-other);
 }
 
+.checkbox-item:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
 .checkbox-item input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+  width: calc(var(--cell-size, 24px) * 0.58);
+  height: calc(var(--cell-size, 24px) * 0.58);
+  margin: 0;
   cursor: pointer;
   accent-color: var(--accent);
 }
 
-/* Responsive adjustments */
 @media (max-width: 768px) {
   #root {
-    padding: 12px;
+    padding: 14px;
   }
 
-  .app h1 {
-    font-size: 22px;
+  .app {
+    gap: 16px;
   }
 
-  .grid-container {
-    max-width: 100%;
+  .checkbox-grid-frame {
+    padding: 8px;
+    border-radius: 16px;
   }
 }
 
 @media (max-width: 480px) {
   #root {
-    padding: 8px;
+    padding: 10px;
   }
 
   .app h1 {
-    font-size: 18px;
+    letter-spacing: 0.01em;
   }
 
-  .grid-container {
-    width: 100%;
+  .checkbox-grid-frame {
+    padding: 6px;
+    border-radius: 14px;
   }
 }
