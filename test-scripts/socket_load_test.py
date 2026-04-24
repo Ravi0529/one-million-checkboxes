@@ -22,6 +22,7 @@ import asyncio
 import random
 import statistics
 import string
+import sys
 import time
 from dataclasses import dataclass, field
 
@@ -236,12 +237,15 @@ class LoadBot:
                     await self._request_range()
         except asyncio.CancelledError:
             self._stop.set()
+            await self._cleanup_client()
             raise
         except Exception:
             self.metrics.connect_failed = True
             self._stop.set()
-        finally:
             await self._cleanup_client()
+            return self.metrics
+
+        await self._cleanup_client()
 
         return self.metrics
 
@@ -387,6 +391,9 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
+    if sys.platform == "win32":
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
     parser = build_parser()
     args = parser.parse_args()
 
