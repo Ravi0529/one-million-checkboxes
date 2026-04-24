@@ -8,11 +8,11 @@ Install dependency:
 --- (users = total users), (duration = each bot runs for x seconds from when the bot starts), (spawn-rate = x new bots generated per second till they reach the total number of bots/users)
 
 Example:
-    python scripts/socket_load_test.py --users 50 --duration 60
-    python scripts/socket_load_test.py --users 200 --duration 120 --spawn-rate 20
-    python scripts/socket_load_test.py --users 500 --duration 120 --spawn-rate 25
-    python scripts/socket_load_test.py --users 1500 --duration 120 --spawn-rate 100
-    python scripts/socket_load_test.py --users 2000 --duration 180 --spawn-rate 100
+    python test-scripts/socket_load_test.py --users 50 --duration 60
+    python test-scripts/socket_load_test.py --users 200 --duration 120 --spawn-rate 20
+    python test-scripts/socket_load_test.py --users 500 --duration 120 --spawn-rate 25
+    python test-scripts/socket_load_test.py --users 1500 --duration 120 --spawn-rate 100
+    python test-scripts/socket_load_test.py --users 2000 --duration 180 --spawn-rate 100
 """
 
 from __future__ import annotations
@@ -92,6 +92,38 @@ class LoadBot:
             engineio_logger=False,
         )
         self._register_handlers()
+
+    async def _cleanup_client(self) -> None:
+        try:
+            if self.client.connected:
+                try:
+                    await self.client.emit(
+                        "unsubscribe_range",
+                        {
+                            "start": self.current_chunk_start,
+                            "end": self.current_chunk_end,
+                        },
+                    )
+                except Exception:
+                    pass
+
+                try:
+                    await self.client.disconnect()
+                except Exception:
+                    pass
+        finally:
+            try:
+                await self.client.shutdown()
+            except Exception:
+                pass
+
+            http_session = getattr(self.client.eio, "http", None)
+
+            if http_session is not None and hasattr(http_session, "close"):
+                try:
+                    await http_session.close()
+                except Exception:
+                    pass
 
     def _register_handlers(self) -> None:
         @self.client.event
@@ -179,41 +211,37 @@ class LoadBot:
                 wait_timeout=10,
             )
             self.metrics.connect_ms = (time.perf_counter() - started_at) * 1000
+            await self.client.emit(
+                "subscribe_range",
+                {"start": self.current_chunk_start, "end": self.current_chunk_end},
+            )
+            await self._request_stats()
+            await self._request_range()
+
+            deadline = time.perf_counter() + self.duration_seconds
+
+            while time.perf_counter() < deadline and not self._stop.is_set():
+                await asyncio.sleep(
+                    random.uniform(self.action_interval_min, self.action_interval_max)
+                )
+
+                if random.random() < 0.25:
+                    await self._subscribe_to_chunk(self._random_chunk_start())
+                    await self._request_range()
+                    continue
+
+                if random.random() < self.toggle_ratio:
+                    await self._toggle_checkbox()
+                else:
+                    await self._request_range()
+        except asyncio.CancelledError:
+            self._stop.set()
+            raise
         except Exception:
             self.metrics.connect_failed = True
             self._stop.set()
-            return self.metrics
-
-        await self.client.emit(
-            "subscribe_range",
-            {"start": self.current_chunk_start, "end": self.current_chunk_end},
-        )
-        await self._request_stats()
-        await self._request_range()
-
-        deadline = time.perf_counter() + self.duration_seconds
-
-        while time.perf_counter() < deadline and not self._stop.is_set():
-            await asyncio.sleep(
-                random.uniform(self.action_interval_min, self.action_interval_max)
-            )
-
-            if random.random() < 0.25:
-                await self._subscribe_to_chunk(self._random_chunk_start())
-                await self._request_range()
-                continue
-
-            if random.random() < self.toggle_ratio:
-                await self._toggle_checkbox()
-            else:
-                await self._request_range()
-
-        if self.client.connected:
-            await self.client.emit(
-                "unsubscribe_range",
-                {"start": self.current_chunk_start, "end": self.current_chunk_end},
-            )
-            await self.client.disconnect()
+        finally:
+            await self._cleanup_client()
 
         return self.metrics
 
@@ -232,23 +260,30 @@ async def run_load_test(args: argparse.Namespace) -> None:
     tasks: list[asyncio.Task[BotMetrics]] = []
     started = time.perf_counter()
 
-    for bot_id in range(args.users):
-        bot = LoadBot(
-            bot_id=bot_id + 1,
-            url=random.choice(args.urls),
-            duration_seconds=args.duration,
-            action_interval_min=args.min_interval,
-            action_interval_max=args.max_interval,
-            toggle_ratio=args.toggle_ratio,
-            start_chunk=args.chunk_start,
-        )
-        bots.append(bot)
-        tasks.append(asyncio.create_task(bot.run()))
+    try:
+        for bot_id in range(args.users):
+            bot = LoadBot(
+                bot_id=bot_id + 1,
+                url=random.choice(args.urls),
+                duration_seconds=args.duration,
+                action_interval_min=args.min_interval,
+                action_interval_max=args.max_interval,
+                toggle_ratio=args.toggle_ratio,
+                start_chunk=args.chunk_start,
+            )
+            bots.append(bot)
+            tasks.append(asyncio.create_task(bot.run()))
 
-        if args.spawn_rate > 0:
-            await asyncio.sleep(1 / args.spawn_rate)
+            if args.spawn_rate > 0:
+                await asyncio.sleep(1 / args.spawn_rate)
 
-    results = await asyncio.gather(*tasks)
+        results = await asyncio.gather(*tasks)
+    except asyncio.CancelledError:
+        for task in tasks:
+            task.cancel()
+
+        await asyncio.gather(*tasks, return_exceptions=True)
+        raise
     elapsed = time.perf_counter() - started
 
     connected = sum(1 for item in results if item.connected)
@@ -377,7 +412,10 @@ def main() -> None:
     ):
         raise SystemExit("--chunk-start must be a valid multiple of 1000")
 
-    asyncio.run(run_load_test(args))
+    try:
+        asyncio.run(run_load_test(args))
+    except KeyboardInterrupt:
+        raise SystemExit("Load test interrupted. Bot sessions were asked to close.")
 
 
 if __name__ == "__main__":
