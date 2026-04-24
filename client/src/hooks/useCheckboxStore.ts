@@ -25,10 +25,24 @@ export const useCheckboxStore = () => {
     listeners.current.get(id)?.forEach((l) => l());
   };
 
-  const setRange = (start: number, values: number[]) => {
+  const setRange = (
+    start: number,
+    values: number[],
+    rangeOwners: Record<number, string> = {},
+  ) => {
     values.forEach((value, index) => {
       const id = start + index;
       data.current.set(id, value);
+
+      if (value === 1) {
+        const owner = rangeOwners[id];
+
+        if (owner) owners.current.set(id, owner);
+        else owners.current.delete(id);
+      } else {
+        owners.current.delete(id);
+      }
+
       notify(id);
     });
   };

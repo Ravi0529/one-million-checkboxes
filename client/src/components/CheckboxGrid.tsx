@@ -12,7 +12,9 @@ const CHUNK_SIZE = 1000;
 
 interface RangeDataPayload {
   start: number;
+  end: number;
   data: number[];
+  owners: Record<number, string>;
 }
 
 export default function CheckboxGrid() {
@@ -22,7 +24,7 @@ export default function CheckboxGrid() {
   useSocket({
     range_data: (...args: unknown[]) => {
       const payload = args[0] as RangeDataPayload;
-      store.setRange(payload.start, payload.data);
+      store.setRange(payload.start, payload.data, payload.owners);
     },
     checkbox_updated: (...args: unknown[]) => {
       const payload = args[0] as {
@@ -32,6 +34,16 @@ export default function CheckboxGrid() {
       };
 
       store.updateOne(payload.id, payload.checked ? 1 : 0, payload.userId);
+    },
+    action_rejected: (...args: unknown[]) => {
+      const payload = args[0] as { id: number };
+      const chunkStart = Math.floor(payload.id / CHUNK_SIZE) * CHUNK_SIZE;
+      const chunkEnd = chunkStart + CHUNK_SIZE;
+
+      socket.emit("get_range", {
+        start: chunkStart,
+        end: chunkEnd,
+      });
     },
   });
 

@@ -4,7 +4,11 @@ import { rateLimiter } from "../../utils/rateLimiter";
 import { validateRange } from "./checkbox.validator";
 
 export const registerCheckboxHandlers = (io: Server, socket: Socket) => {
-  const userId = socket.id;
+  const handshakeUserId = socket.handshake.auth?.userId;
+  const userId =
+    typeof handshakeUserId === "string" && handshakeUserId.trim().length > 0
+      ? handshakeUserId
+      : socket.id;
 
   const activeRanges = new Set<string>();
 
@@ -23,6 +27,7 @@ export const registerCheckboxHandlers = (io: Server, socket: Socket) => {
 
       if (!result) {
         socket.emit("action_rejected", {
+          id: data.id,
           message: "Not your checkbox",
         });
         return;
@@ -34,7 +39,7 @@ export const registerCheckboxHandlers = (io: Server, socket: Socket) => {
 
       const room = `range:${chunkStart}-${chunkEnd}`;
 
-      io.emit("checkbox_updated", result);
+      io.to(room).emit("checkbox_updated", result);
     } catch (error) {
       console.error("Toggle error: ", error);
     }
@@ -55,15 +60,12 @@ export const registerCheckboxHandlers = (io: Server, socket: Socket) => {
 
       if (!validateRange(start, end)) {
         socket.emit("error", { message: "Invalid range" });
+        return;
       }
 
       const rangeData = await checkboxService.getRange(start, end);
 
-      socket.emit("range_data", {
-        start,
-        end,
-        data: rangeData,
-      });
+      socket.emit("range_data", rangeData);
     } catch (error) {
       socket.emit("error", {
         message: "Failed to fetch range",

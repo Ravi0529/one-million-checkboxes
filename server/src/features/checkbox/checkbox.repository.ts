@@ -31,25 +31,62 @@ export const checkboxRepository = {
   },
 
   async getRange(start: number, end: number): Promise<number[]> {
-    const byteStart = Math.floor(start / 8);
-    const byteEnd = Math.floor((end - 1) / 8);
-
-    const raw = await redis.getrange(CHECKBOX_BITMAP_KEY, byteStart, byteEnd);
-
-    const buffer = Buffer.from(raw, "latin1");
-
-    const result: number[] = [];
+    const pipeline = redis.pipeline();
 
     for (let i = start; i < end; i++) {
-      const byteIndex = Math.floor(i / 8) - byteStart;
-      const bitIndex = 7 - (i % 8);
-
-      const byte = buffer[byteIndex] ?? 0;
-      const bit = (byte >> bitIndex) & 1;
-
-      result.push(bit);
+      pipeline.getbit(CHECKBOX_BITMAP_KEY, i);
     }
 
-    return result;
+    const results = await pipeline.exec();
+
+    if (!results) {
+      throw new Error("Failed to read checkbox range");
+    }
+
+    return results.map(([error, value]) => {
+      if (error) {
+        throw error;
+      }
+
+      return Number(value ?? 0);
+    });
+  },
+
+  async getOwners(ids: number[]): Promise<Record<number, string>> {
+    if (ids.length === 0) {
+      return {};
+    }
+
+    const pipeline = redis.pipeline();
+
+    ids.forEach((id) => {
+      pipeline.get(getOwnerKey(id));
+    });
+
+    const results = await pipeline.exec();
+
+    if (!results) {
+      throw new Error("Failed to read checkbox owners");
+    }
+
+    return ids.reduce<Record<number, string>>((acc, id, index) => {
+      const entry = results[index];
+
+      if (!entry) {
+        return acc;
+      }
+
+      const [error, value] = entry;
+
+      if (error) {
+        throw error;
+      }
+
+      if (typeof value === "string" && value.length > 0) {
+        acc[id] = value;
+      }
+
+      return acc;
+    }, {});
   },
 };

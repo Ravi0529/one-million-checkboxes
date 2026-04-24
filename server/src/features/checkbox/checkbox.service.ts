@@ -1,5 +1,9 @@
 import { checkboxRepository } from "./checkbox.repository";
-import { ToggleCheckboxPayload, ToggleResult } from "./checkbox.types";
+import {
+  RangeData,
+  ToggleCheckboxPayload,
+  ToggleResult,
+} from "./checkbox.types";
 
 export const checkboxService = {
   async toggle(
@@ -21,11 +25,26 @@ export const checkboxService = {
     };
   },
 
-  async getRange(start: number, end: number): Promise<number[]> {
+  async getRange(start: number, end: number): Promise<RangeData> {
     if (start < 0 || end > 1_000_000 || start >= end) {
       throw new Error("Invalid range");
     }
 
-    return checkboxRepository.getRange(start, end);
+    const data = await checkboxRepository.getRange(start, end);
+    const checkedIds = data.reduce<number[]>((acc, value, index) => {
+      if (value === 1) {
+        acc.push(start + index);
+      }
+
+      return acc;
+    }, []);
+    const owners = await checkboxRepository.getOwners(checkedIds);
+
+    return {
+      start,
+      end,
+      data,
+      owners,
+    };
   },
 };

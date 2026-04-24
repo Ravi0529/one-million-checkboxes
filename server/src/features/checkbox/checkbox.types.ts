@@ -1,6 +1,5 @@
 export interface ToggleCheckboxPayload {
   id: number;
-  checked: boolean;
 }
 
 export interface ToggleResult {
@@ -18,4 +17,5 @@ export interface RangeData {
   start: number;
   end: number;
   data: number[];
+  owners: Record<number, string>;
 }

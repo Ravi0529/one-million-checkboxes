@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React from "react";
 import { socket } from "../services/socket";
 import { useCheckboxValue } from "../hooks/useCheckboxValue";
 import type { CheckboxStore } from "../hooks/useCheckboxStore";
@@ -12,14 +12,7 @@ interface CheckboxItemProps {
 
 function CheckboxItem({ id, store, style }: CheckboxItemProps) {
   const { value, owner } = useCheckboxValue(id, store);
-
-  const userIdRef = useRef<string | null>(null);
-
-  if (!userIdRef.current && socket.id) {
-    userIdRef.current = socket.id;
-  }
-
-  const currentUserId = userIdRef.current;
+  const currentUserId = userId;
 
   const handleChange = () => {
     const newValue = value === 0 ? 1 : 0;
@@ -28,7 +21,6 @@ function CheckboxItem({ id, store, style }: CheckboxItemProps) {
 
     socket.emit("toggle_checkbox", {
       id,
-      userId,
     });
   };
 

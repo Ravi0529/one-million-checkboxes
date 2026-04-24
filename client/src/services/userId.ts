@@ -1,9 +1,9 @@
 const getUserId = () => {
-  let id = localStorage.getItem("userId");
+  let id = sessionStorage.getItem("userId");
 
   if (!id) {
     id = crypto.randomUUID();
-    localStorage.setItem("userId", id);
+    sessionStorage.setItem("userId", id);
   }
 
   return id;
