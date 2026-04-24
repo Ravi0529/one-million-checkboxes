@@ -1,10 +1,5 @@
 import { redis } from "../config/redis";
-import {
-  ACTIVE_USERS_HASH_KEY,
-  CHECKBOX_BITMAP_KEY,
-  CHECKED_COUNT_KEY,
-  getOwnerKey,
-} from "./checkbox.constants";
+import { CHECKBOX_BITMAP_KEY, getOwnerKey } from "./checkbox.constants";
 import { TOGGLE_CHECKBOX_LUA } from "./checkbox.lua";
 
 export const checkboxRepository = {
@@ -20,10 +15,9 @@ export const checkboxRepository = {
 
     const result = (await redis.eval(
       TOGGLE_CHECKBOX_LUA,
-      3,
+      2,
       CHECKBOX_BITMAP_KEY,
       ownerKey,
-      CHECKED_COUNT_KEY,
       id,
       userId,
     )) as [number, string | null];
@@ -94,34 +88,5 @@ export const checkboxRepository = {
 
       return acc;
     }, {});
-  },
-
-  async getCheckedCount(): Promise<number> {
-    const value = await redis.get(CHECKED_COUNT_KEY);
-
-    if (value !== null) {
-      return Number(value);
-    }
-
-    const total = await redis.bitcount(CHECKBOX_BITMAP_KEY);
-    await redis.set(CHECKED_COUNT_KEY, total);
-
-    return total;
-  },
-
-  async incrementActiveUser(userId: string) {
-    return redis.hincrby(ACTIVE_USERS_HASH_KEY, userId, 1);
-  },
-
-  async decrementActiveUser(userId: string) {
-    const nextCount = await redis.hincrby(ACTIVE_USERS_HASH_KEY, userId, -1);
-
-    if (nextCount <= 0) {
-      await redis.hdel(ACTIVE_USERS_HASH_KEY, userId);
-    }
-  },
-
-  async getActiveUsersCount(): Promise<number> {
-    return redis.hlen(ACTIVE_USERS_HASH_KEY);
   },
 };

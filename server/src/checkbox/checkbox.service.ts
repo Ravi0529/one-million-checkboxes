@@ -1,6 +1,5 @@
 import { checkboxRepository } from "./checkbox.repository";
 import {
-  CheckboxStats,
   RangeData,
   ToggleCheckboxPayload,
   ToggleResult,
@@ -46,18 +45,6 @@ export const checkboxService = {
       end,
       data,
       owners,
-    };
-  },
-
-  async getStats(): Promise<CheckboxStats> {
-    const [activeUsers, checkedCount] = await Promise.all([
-      checkboxRepository.getActiveUsersCount(),
-      checkboxRepository.getCheckedCount(),
-    ]);
-
-    return {
-      activeUsers,
-      checkedCount,
     };
   },
 };

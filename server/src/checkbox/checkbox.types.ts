@@ -19,8 +19,3 @@ export interface RangeData {
   data: number[];
   owners: Record<number, string>;
 }
-
-export interface CheckboxStats {
-  activeUsers: number;
-  checkedCount: number;
-}

@@ -2,7 +2,6 @@ import { Server, Socket } from "socket.io";
 import { checkboxService } from "./checkbox.service";
 import { rateLimiter } from "../utils/rateLimiter";
 import { validateRange } from "./checkbox.validator";
-import { emitStats, broadcastStats } from "./checkbox.stats";
 
 export const registerCheckboxHandlers = (io: Server, socket: Socket) => {
   const handshakeUserId = socket.handshake.auth?.userId;
@@ -41,7 +40,6 @@ export const registerCheckboxHandlers = (io: Server, socket: Socket) => {
       const room = `range:${chunkStart}-${chunkEnd}`;
 
       io.to(room).emit("checkbox_updated", result);
-      await broadcastStats(io);
     } catch (error) {
       console.error("Toggle error: ", error);
     }
@@ -71,16 +69,6 @@ export const registerCheckboxHandlers = (io: Server, socket: Socket) => {
     } catch (error) {
       socket.emit("error", {
         message: "Failed to fetch range",
-      });
-    }
-  });
-
-  socket.on("get_stats", async () => {
-    try {
-      await emitStats(socket);
-    } catch (error) {
-      socket.emit("error", {
-        message: "Failed to fetch stats",
       });
     }
   });
