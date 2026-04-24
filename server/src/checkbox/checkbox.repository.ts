@@ -1,4 +1,4 @@
-import { redis } from "../../config/redis";
+import { redis } from "../config/redis";
 import { CHECKBOX_BITMAP_KEY, getOwnerKey } from "./checkbox.constants";
 import { TOGGLE_CHECKBOX_LUA } from "./checkbox.lua";
 

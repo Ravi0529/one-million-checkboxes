@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { registerCheckboxHandlers } from "../features/checkbox/checkbox.socket";
+import { registerCheckboxHandlers } from "../checkbox/checkbox.socket";
 
 export const registerSockets = (io: Server) => {
   io.on("connection", (socket: Socket) => {

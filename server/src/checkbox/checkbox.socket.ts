@@ -1,6 +1,6 @@
 import { Server, Socket } from "socket.io";
 import { checkboxService } from "./checkbox.service";
-import { rateLimiter } from "../../utils/rateLimiter";
+import { rateLimiter } from "../utils/rateLimiter";
 import { validateRange } from "./checkbox.validator";
 
 export const registerCheckboxHandlers = (io: Server, socket: Socket) => {
